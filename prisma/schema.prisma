@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique @db.VarChar(255)
+  name      String    @db.VarChar(255)
+  password  String    @db.VarChar(255)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  account   Account?
+  sessions  Session[]
+  wishes    Wish[]
+
+  @@map("users")
+}
+
+model Session {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("sessions")
+}
+
+model Account {
+  id                   Int                   @id @default(autoincrement())
+  userId               Int                   @unique
+  balance              Int
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  user                 User                  @relation(fields: [userId], references: [id])
+  externalTransactions ExternalTransaction[]
+
+  @@map("accounts")
+}
+
+model ExternalTransaction {
+  id        Int             @id @default(autoincrement())
+  accountId Int
+  type      TransactionType
+  value     Int
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  account   Account         @relation(fields: [accountId], references: [id])
+
+  @@map("external_transactions")
+}
+
+model Wish {
+  id                   Int                   @id @default(autoincrement())
+  userId               Int
+  name                 String                @db.VarChar(255)
+  value                Int
+  date                 DateTime
+  imageUrl             String                @db.VarChar(255)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  internalTransactions InternalTransaction[]
+  subGoals             Subgoal[]
+  user                 User                  @relation(fields: [userId], references: [id])
+
+  @@map("wishes")
+}
+
+model InternalTransaction {
+  id        Int             @id @default(autoincrement())
+  wishId    Int
+  type      TransactionType
+  value     Int
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  wish      Wish            @relation(fields: [wishId], references: [id])
+
+  @@map("internal_transactions")
+}
+
+model Subgoal {
+  id        Int      @id @default(autoincrement())
+  wishId    Int
+  value     Int
+  date      DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  wish      Wish     @relation(fields: [wishId], references: [id])
+
+  @@map("subgoals")
+}
+
+enum TransactionType {
+  WITHDRAW
+  DEPOSIT
+}
